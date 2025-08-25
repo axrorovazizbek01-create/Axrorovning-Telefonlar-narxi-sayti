@@ -1,0 +1,300 @@
+import React, { useEffect, useMemo, useState } from "react"; import { Button } from "@/components/ui/button"; import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"; import { Input } from "@/components/ui/input"; import { Badge } from "@/components/ui/badge"; import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"; import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"; import { Separator } from "@/components/ui/separator"; import { Sparkles, LogIn, Lock, Check, Shield, Phone, Laptop, Star, Crown, Search, ArrowRight, Play } from "lucide-react"; import { motion, useScroll, useTransform } from "framer-motion";
+
+/**
+
+TechReview Paywall (UZ)
+
+Mavzu: Telefonlar & Kompyuterlar yangiliklari, narxlar va obzorlar
+
+Monetizatsiya: A’zo bo‘lish (Payme to‘lov havolasi) + kod orqali kirish
+
+Eslatma:
+
+1. PAYME_LINK_* ni o‘z merchantingiz Payment Link’iga almashtiring.
+
+
+
+2. DEMO_CODE — demo kirish kodi; realda backend orqali tekshiring (Supabase/Firestore/Express).
+
+
+
+3. Kontent yuklash: "data" massivlarini API’dan to‘ldirish mumkin (CMS yoki Google Sheet/Supabase). */
+
+
+
+
+const PAYME_LINK_MONTHLY = "https://payme.uz/link/your-monthly"; // <-- O'zingizning Payme Payment Link const PAYME_LINK_YEARLY = "https://payme.uz/link/your-yearly";   // <-- O'zingizning Payme Payment Link const DEMO_CODE = "DEMO-123"; const LS_KEY = "techreview_membership";
+
+export default function TechReviewPaywall() { const [isMember, setIsMember] = useState(false); const [code, setCode] = useState(""); const [msg, setMsg] = useState(""); const [q, setQ] = useState("");
+
+useEffect(() => { const saved = localStorage.getItem(LS_KEY); if (saved === "true") setIsMember(true); }, []);
+
+function redeem() { if (code.trim().toUpperCase() === DEMO_CODE) { localStorage.setItem(LS_KEY, "true"); setIsMember(true); setMsg("Tabriklaymiz! A’zo bo‘lim ochildi."); } else { setMsg("Kod noto‘g‘ri yoki muddati o‘tgan."); } } function logout() { localStorage.removeItem(LS_KEY); setIsMember(false); setCode(""); setMsg(""); }
+
+// Parallax fon const { scrollY } = useScroll(); const y1 = useTransform(scrollY, [0, 600], [0, 80]); const y2 = useTransform(scrollY, [0, 600], [0, -60]);
+
+// Mock kontent (keyin API bilan almashtiring) const news = useMemo(() => ([ { id: 1, type: "phone", title: "Galaxy S25 Ultra — 200MP kamera sinovi", tag: "Yangilik", priceHint: "$1199+", cover: "https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?auto=format&fit=crop&w=1200&q=60" }, { id: 2, type: "laptop", title: "MacBook Pro M4 — real benchmarking", tag: "Obzor", priceHint: "$1999+", cover: "https://images.unsplash.com/photo-1517336714731-489689fd1ca8?auto=format&fit=crop&w=1200&q=60" }, { id: 3, type: "phone", title: "Redmi Note 14 — eng yaxshi byudjet?", tag: "Narxlar", priceHint: "$189–$229", cover: "https://images.unsplash.com/photo-1512496015851-a90fb38ba796?auto=format&fit=crop&w=1200&q=60" }, { id: 4, type: "laptop", title: "ROG Zephyrus — o‘yin uchun eng zo‘r ratio", tag: "Test", priceHint: "$1499+", cover: "https://images.unsplash.com/photo-1517336714731-489689fd1ca8?auto=format&fit=crop&w=1200&q=60" }, { id: 5, type: "phone", title: "iPhone 16 Pro — kamera vs stabilizatsiya", tag: "Taqqoslash", priceHint: "$999+", cover: "https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?auto=format&fit=crop&w=1200&q=60" }, { id: 6, type: "laptop", title: "Lenovo LOQ — arzon gaming notebook 2025", tag: "Obzor", priceHint: "$799–$999", cover: "https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&w=1200&q=60" }, ]), []);
+
+const filtered = useMemo(() => { const k = q.trim().toLowerCase(); if (!k) return news; return news.filter(n => n.title.toLowerCase().includes(k)); }, [q, news]);
+
+return ( <div className="relative min-h-screen overflow-x-hidden"> {/* ==== Animated Gradient Background ==== */} <AnimatedBackground y1={y1} y2={y2} />
+
+{/* ==== NAVBAR ==== */}
+  <header className="relative z-10 max-w-7xl mx-auto px-4 py-4 flex items-center justify-between">
+    <div className="flex items-center gap-3">
+      <Sparkles className="w-7 h-7 text-amber-500" />
+      <span className="font-extrabold text-xl bg-gradient-to-r from-fuchsia-500 via-amber-400 to-cyan-500 bg-clip-text text-transparent">
+        TechReview.uz
+      </span>
+      <Badge className="hidden sm:inline">A’zo sayt</Badge>
+    </div>
+    <div className="flex items-center gap-2">
+      {!isMember ? (
+        <Dialog>
+          <DialogTrigger asChild>
+            <Button size="sm" className="rounded-2xl"><LogIn className="w-4 h-4 mr-2"/>Kodni kiriting</Button>
+          </DialogTrigger>
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader>
+              <DialogTitle>Faollashtirish kodi</DialogTitle>
+            </DialogHeader>
+            <div className="flex flex-col gap-3">
+              <Input placeholder="Masalan: DEMO-123" value={code} onChange={(e)=>setCode(e.target.value)} />
+              <Button onClick={redeem}>Kirish</Button>
+              {msg && <p className="text-sm text-slate-600">{msg}</p>}
+              <p className="text-xs text-slate-500">Eslatma: Demo. Realda kod serverda tekshiriladi.</p>
+            </div>
+          </DialogContent>
+        </Dialog>
+      ) : (
+        <Button variant="outline" size="sm" onClick={logout}><Lock className="w-4 h-4 mr-2"/>Chiqish</Button>
+      )}
+    </div>
+  </header>
+
+  {/* ==== HERO ==== */}
+  <section className="relative z-10 max-w-7xl mx-auto px-4 pt-10 pb-16 text-center">
+    <motion.h1 initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.8 }}
+      className="text-4xl md:text-6xl font-extrabold leading-tight bg-gradient-to-r from-fuchsia-500 via-amber-400 to-cyan-500 bg-clip-text text-transparent">
+      Telefon & Kompyuter yangiliklari, narxlar va chuqur obzorlar
+    </motion.h1>
+    <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.3 }}
+      className="mt-5 max-w-2xl mx-auto text-slate-700 text-lg">
+      So‘nggi trendlar, benchmarklar, real narxlar va maslahatlar. To‘liq narxlar jadvali va premium obzorlar faqat a’zolar uchun.
+    </motion.p>
+    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.6 }}
+      className="mt-7 flex justify-center gap-3">
+      <a href="#pricing"><Button size="lg" className="rounded-2xl">A’zo bo‘lish</Button></a>
+      <a href="#latest"><Button variant="outline" size="lg" className="rounded-2xl">Yangiliklarni ko‘rish</Button></a>
+    </motion.div>
+  </section>
+
+  {/* ==== SEARCH BAR ==== */}
+  <section className="relative z-10 max-w-7xl mx-auto px-4 pb-6">
+    <div className="mx-auto max-w-xl bg-white/70 backdrop-blur border rounded-2xl p-3 flex items-center gap-2 shadow-sm">
+      <Search className="w-5 h-5"/>
+      <input
+        value={q}
+        onChange={(e)=>setQ(e.target.value)}
+        placeholder="Qidiruv: Galaxy, iPhone, ROG, Lenovo..."
+        className="w-full bg-transparent outline-none text-sm"
+      />
+    </div>
+  </section>
+
+  {/* ==== LATEST CARDS ==== */}
+  <section id="latest" className="relative z-10 max-w-7xl mx-auto px-4 pb-14">
+    <div className="flex items-center justify-between mb-5">
+      <h2 className="text-2xl md:text-3xl font-bold">So‘nggi materiallar</h2>
+      <div className="flex items-center gap-2 text-sm text-slate-600">
+        <Phone className="w-4 h-4"/> Telefonlar <Separator orientation="vertical" className="h-4"/> <Laptop className="w-4 h-4"/> Kompyuterlar
+      </div>
+    </div>
+    <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
+      {filtered.map((item, idx) => (
+        <motion.div
+          key={item.id}
+          initial={{ opacity: 0, y: 30 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ delay: idx * 0.05 }}
+          className="group"
+        >
+          <Card className="overflow-hidden rounded-2xl border-0 shadow-lg bg-white/80 backdrop-blur">
+            <div className="relative h-44 overflow-hidden">
+              <img src={item.cover} alt={item.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"/>
+              <div className="absolute left-3 top-3">
+                <Badge variant="secondary">{item.tag}</Badge>
+              </div>
+            </div>
+            <CardHeader>
+              <CardTitle className="text-base leading-snug">{item.title}</CardTitle>
+              <CardDescription className="flex items-center gap-2">
+                {item.type === "phone" ? <Phone className="w-4 h-4"/> : <Laptop className="w-4 h-4"/>}
+                {item.type === "phone" ? "Telefon" : "Noutbuk"} · Narx: <span className="font-medium">{isMember ? item.priceHint : "A’zo bo‘ling"}</span>
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="flex items-center justify-between">
+              <Button variant="secondary" className="rounded-2xl"><Play className="w-4 h-4 mr-2"/>Obzor</Button>
+              {!isMember ? (
+                <a href="#pricing" className="text-sm inline-flex items-center gap-1 hover:underline">To‘liq narxlar<Crown className="w-4 h-4"/></a>
+              ) : (
+                <span className="text-sm text-emerald-600 flex items-center gap-1"><Star className="w-4 h-4"/> Premium</span>
+              )}
+            </CardContent>
+          </Card>
+        </motion.div>
+      ))}
+    </div>
+  </section>
+
+  {/* ==== PRICING / PAYME ==== */}
+  <section id="pricing" className="relative z-10 max-w-7xl mx-auto px-4 pb-20">
+    <div className="text-center mb-8">
+      <h2 className="text-3xl md:text-4xl font-bold bg-gradient-to-r from-cyan-500 to-fuchsia-500 bg-clip-text text-transparent">A’zo bo‘lish</h2>
+      <p className="text-slate-600">To‘liq narxlar jadvallari, premium obzorlar va yopiq chat — faqat a’zolar uchun.</p>
+    </div>
+    <Tabs defaultValue="monthly" className="max-w-3xl mx-auto">
+      <TabsList className="grid grid-cols-2">
+        <TabsTrigger value="monthly">Oylik</TabsTrigger>
+        <TabsTrigger value="yearly">Yillik</TabsTrigger>
+      </TabsList>
+      <TabsContent value="monthly">
+        <motion.div initial={{ opacity: 0, scale: 0.96 }} whileInView={{ opacity: 1, scale: 1 }} viewport={{ once: true }}>
+          <Card className="rounded-2xl shadow-xl bg-white/80 backdrop-blur border">
+            <CardHeader>
+              <CardTitle>Oylik reja</CardTitle>
+              <CardDescription>Istalgan vaqtda bekor qilish mumkin</CardDescription>
+            </CardHeader>
+            <CardContent className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
+              <div>
+                <div className="text-3xl font-extrabold">49 000 so‘m / oy</div>
+                <ul className="mt-3 space-y-2 text-slate-600 text-sm">
+                  <li className="flex items-center gap-2"><Check className="w-4 h-4"/> To‘liq narxlar jadvali</li>
+                  <li className="flex items-center gap-2"><Check className="w-4 h-4"/> Premium video obzorlar</li>
+                  <li className="flex items-center gap-2"><Check className="w-4 h-4"/> Yopiq Telegram chat</li>
+                </ul>
+              </div>
+              <div className="flex gap-3">
+                <Button asChild size="lg" className="rounded-2xl">
+                  <a href={PAYME_LINK_MONTHLY} target="_blank" rel="noreferrer"><Crown className="w-4 h-4 mr-2"/>Payme orqali to‘lash</a>
+                </Button>
+                <PayCodeDialog code={code} setCode={setCode} redeem={redeem} msg={msg} />
+              </div>
+            </CardContent>
+          </Card>
+        </motion.div>
+      </TabsContent>
+      <TabsContent value="yearly">
+        <motion.div initial={{ opacity: 0, scale: 0.96 }} whileInView={{ opacity: 1, scale: 1 }} viewport={{ once: true }}>
+          <Card className="rounded-2xl shadow-xl bg-white/80 backdrop-blur border border-amber-200">
+            <CardHeader>
+              <CardTitle>Yillik reja</CardTitle>
+              <CardDescription>2 oy bepulga teng tejash</CardDescription>
+            </CardHeader>
+            <CardContent className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
+              <div>
+                <div className="text-3xl font-extrabold">490 000 so‘m / yil</div>
+                <ul className="mt-3 space-y-2 text-slate-600 text-sm">
+                  <li className="flex items-center gap-2"><Check className="w-4 h-4"/> VIP ustuvor qo‘llab-quvvatlash</li>
+                  <li className="flex items-center gap-2"><Check className="w-4 h-4"/> Maxfiy taqqoslash testlari</li>
+                  <li className="flex items-center gap-2"><Check className="w-4 h-4"/> Qo‘shimcha sovg‘alar va chegirmalar</li>
+                </ul>
+              </div>
+              <div className="flex gap-3">
+                <Button asChild size="lg" className="rounded-2xl">
+                  <a href={PAYME_LINK_YEARLY} target="_blank" rel="noreferrer"><Crown className="w-4 h-4 mr-2"/>Payme orqali to‘lash</a>
+                </Button>
+                <PayCodeDialog code={code} setCode={setCode} redeem={redeem} msg={msg} />
+              </div>
+            </CardContent>
+          </Card>
+        </motion.div>
+      </TabsContent>
+    </Tabs>
+  </section>
+
+  {/* ==== MEMBER AREA ==== */}
+  {isMember && (
+    <section className="relative z-10 max-w-7xl mx-auto px-4 pb-24">
+      <div className="text-center mb-8">
+        <h3 className="text-3xl md:text-4xl font-bold bg-gradient-to-r from-emerald-500 to-blue-500 bg-clip-text text-transparent">A’zo bo‘lim</h3>
+        <p className="text-slate-600">To‘liq narxlar jadvali, benchmarklar va yuklab olinadigan fayllar.</p>
+      </div>
+      <div className="grid md:grid-cols-2 gap-6">
+        <Card className="rounded-2xl shadow-md bg-white/80 backdrop-blur">
+          <CardHeader>
+            <CardTitle>Telefonlar narxlar jadvali</CardTitle>
+            <CardDescription>Yangilanib boradi</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <table className="w-full text-sm">
+              <thead className="text-left text-slate-500">
+                <tr><th className="py-2">Model</th><th>RAM/ROM</th><th>Taxminiy narx</th></tr>
+              </thead>
+              <tbody>
+                {[
+                  ["Galaxy S25 Ultra", "12/256", "$1199+"],
+                  ["iPhone 16 Pro", "8/256", "$999+"],
+                  ["Redmi Note 14", "8/256", "$189–$229"],
+                ].map((r, i)=> (
+                  <tr key={i} className="border-t"><td className="py-2">{r[0]}</td><td>{r[1]}</td><td>{r[2]}</td></tr>
+                ))}
+              </tbody>
+            </table>
+          </CardContent>
+        </Card>
+        <Card className="rounded-2xl shadow-md bg-white/80 backdrop-blur">
+          <CardHeader>
+            <CardTitle>Noutbuk benchmarklar</CardTitle>
+            <CardDescription>Geekbench / 3DMark (demo)</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <ul className="text-sm space-y-2">
+              <li className="flex items-center gap-2"><Star className="w-4 h-4"/> MacBook Pro M4 — CPU multi ~ 20k (taxminiy)</li>
+              <li className="flex items-center gap-2"><Star className="w-4 h-4"/> ROG Zephyrus — GPU 3DMark ~ 12k (taxminiy)</li>
+              <li className="flex items-center gap-2"><Star className="w-4 h-4"/> Lenovo LOQ — balans narx/performans</li>
+            </ul>
+          </CardContent>
+        </Card>
+      </div>
+    </section>
+  )}
+
+  {/* ==== FOOTER ==== */}
+  <footer className="relative z-10 border-t bg-white/70 backdrop-blur">
+    <div className="max-w-7xl mx-auto px-4 py-6 text-sm text-slate-600 flex flex-col md:flex-row items-start md:items-center justify-between gap-3">
+      <div>© {new Date().getFullYear()} TechReview.uz — Halol daromad platformasi</div>
+      <div className="flex gap-4">
+        <a href="#" className="hover:underline">Foydalanish shartlari</a>
+        <a href="#" className="hover:underline">Maxfiylik</a>
+        <a href="#" className="hover:underline">Aloqa</a>
+      </div>
+    </div>
+  </footer>
+</div>
+
+); }
+
+function PayCodeDialog({ code, setCode, redeem, msg }) { return ( <Dialog> <DialogTrigger asChild> <Button variant="outline" size="lg" className="rounded-2xl"><LogIn className="w-4 h-4 mr-2"/>Kodni kiriting</Button> </DialogTrigger> <DialogContent className="sm:max-w-md"> <DialogHeader> <DialogTitle>Faollashtirish kodi</DialogTitle> </DialogHeader> <div className="flex flex-col gap-3"> <Input placeholder="Masalan: DEMO-123" value={code} onChange={(e)=>setCode(e.target.value)} /> <Button onClick={redeem}>Kirish</Button> {msg && <p className="text-sm text-slate-600">{msg}</p>} </div> </DialogContent> </Dialog> ); }
+
+function AnimatedBackground({ y1, y2 }) { // 1) Gradient grid overlay  2) Parallax blur blobs  3) Floating dots return ( <div className="absolute inset-0 -z-10"> {/* Gradient base */} <div className="absolute inset-0 bg-gradient-to-br from-white via-slate-50 to-white"/>
+
+{/* Grid lines */}
+  <div className="absolute inset-0 opacity-[0.35]" style={{
+    backgroundImage: `linear-gradient(to right, rgba(100,116,139,0.08) 1px, transparent 1px), linear-gradient(to bottom, rgba(100,116,139,0.08) 1px, transparent 1px)`,
+    backgroundSize: "40px 40px",
+  }}/>
+
+  {/* Parallax blobs */}
+  <motion.div style={{ y: y1 }} className="absolute -top-24 -left-24 w-[28rem] h-[28rem] bg-gradient-to-tr from-fuchsia-400 to-amber-300 rounded-full blur-3xl opacity-30"/>
+  <motion.div style={{ y: y2 }} className="absolute -bottom-24 -right-24 w-[30rem] h-[30rem] bg-gradient-to-tr from-cyan-300 to-indigo-400 rounded-full blur-3xl opacity-30"/>
+
+  {/* Floating dots */}
+  <FloatingDots />
+</div>
+
+); }
+
+function FloatingDots() { const dots = new Array(16).fill(0); return ( <div className="absolute inset-0 pointer-events-none"> {dots.map((_, i) => ( <motion.span key={i} className="absolute w-1.5 h-1.5 rounded-full bg-slate-300/70" initial={{ opacity: 0, y: 0 }} animate={{ opacity: [0, 1, 0], y: [0, -20 - (i%5)*10, 0] }} transition={{ duration: 6 + (i%5), repeat: Infinity, delay: i * 0.2 }} style={{ left: ${(i*7)%100}%, top: ${(i*13)%100}% }} />) )} </div> ); }
+
